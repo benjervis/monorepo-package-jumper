@@ -22,6 +22,7 @@ const getWorkspaceRoot = async () => {
 
   const [cwdProvider] = await Workspace.detectWorkspaceProviders(cwd);
 
+  // If the user doesn't have anything open, we'll just have to work from the very top level
   if (cwdProvider || !activeDocument) {
     return cwd;
   }
