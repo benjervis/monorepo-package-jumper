@@ -1,25 +1,97 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import { getPackageDirectories } from "./packages";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+import * as vscode from "vscode";
+import { Workspace } from "ultra-runner";
+import path from "node:path";
+
+interface PickOption {
+  label: string;
+  detail: string;
+  absPath: string;
+}
+
+const getWorkspaceRoot = async () => {
+  const cwd = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!cwd) {
+    throw new Error("No VSCode workspace detected");
+  }
+
+  const activeDocument = vscode.window.activeTextEditor?.document.fileName;
+
+  // If the cwd has no workspace provider, then get nearest package directory
+
+  const [cwdProvider] = await Workspace.detectWorkspaceProviders(cwd);
+
+  if (cwdProvider || !activeDocument) {
+    return cwd;
+  }
+
+  const packageDirectories = await getPackageDirectories(cwd);
+
+  const currentPackageDirectory = packageDirectories.find(
+    ({ directory }) => activeDocument.indexOf(directory) === 0
+  );
+
+  return currentPackageDirectory?.directory ?? cwd;
+};
+
+const getPickOptions = (
+  context: vscode.ExtensionContext,
+  workspaceRoot: string,
+  workspace: Workspace
+): PickOption[] => {
+  const cachedOptions = context.workspaceState.get<PickOption[]>(workspaceRoot);
+
+  if (cachedOptions) {
+    return cachedOptions;
+  }
+
+  const freshOptions = workspace.getPackages().map((pkg) => ({
+    label: pkg.name,
+    detail: path.relative(workspaceRoot, pkg.root),
+    absPath: pkg.root,
+  }));
+
+  context.workspaceState.update(workspaceRoot, freshOptions);
+
+  return freshOptions;
+};
+
 export function activate(context: vscode.ExtensionContext) {
+  const refreshCache = vscode.commands.registerCommand(
+    "monorepo-package-jumper.refreshCache",
+    async () => {
+      const workspaceRoot = await getWorkspaceRoot();
+      context.workspaceState.update(workspaceRoot, null);
+    }
+  );
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "monorepo-package-jumper" is now active!');
+  let jumpToPackage = vscode.commands.registerCommand(
+    "monorepo-package-jumper.jumpToPackage",
+    async () => {
+      const workspaceRoot = await getWorkspaceRoot();
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('monorepo-package-jumper.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from monorepo-package-jumper!');
-	});
+      const workspace = await Workspace.getWorkspace({ cwd: workspaceRoot });
+      console.log("workspace: ", workspace);
 
-	context.subscriptions.push(disposable);
+      if (!workspace) {
+        throw new Error("Everything is ruined");
+      }
+
+      const pickOptions = getPickOptions(context, workspaceRoot, workspace);
+
+      const result = await vscode.window.showQuickPick(pickOptions);
+
+      if (result) {
+        await vscode.window.showTextDocument(
+          vscode.Uri.file(`${result.absPath}/package.json`)
+        );
+      }
+    }
+  );
+
+  context.subscriptions.push(jumpToPackage);
+  context.subscriptions.push(refreshCache);
 }
 
 // This method is called when your extension is deactivated
