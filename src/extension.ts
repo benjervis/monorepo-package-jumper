@@ -10,11 +10,18 @@ interface PickOption {
   absPath: string;
 }
 
-const getWorkspaceRoot = async () => {
+const getBaseCwd = () => {
   const cwd = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+
   if (!cwd) {
     throw new Error("No VSCode workspace detected");
   }
+
+  return cwd;
+};
+
+const getWorkspaceRoot = async () => {
+  const cwd = getBaseCwd();
 
   const activeDocument = vscode.window.activeTextEditor?.document.fileName;
 
@@ -94,9 +101,10 @@ export function activate(context: vscode.ExtensionContext) {
           vscode.Uri.file(`${result.absPath}/package.json`)
         );
       } else {
+        const filterString = path.relative(getBaseCwd(), result.absPath);
         vscode.commands.executeCommand(
           "workbench.action.quickOpen",
-          `${result.detail} `
+          `${filterString} `
         );
       }
 
