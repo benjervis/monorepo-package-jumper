@@ -4,6 +4,7 @@
   "repository": {
     "url": "https://github.com/benjervis/monorepo-package-jumper"
   },
+  "publisher": "bjervis",
   "description": "Quick navigation for packages inside large monorepos",
   "version": "0.0.1",
   "license": "MIT",
@@ -32,14 +33,15 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "vscode:prepublish": "pnpm run esbuild-base -- --minify",
     "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
-    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "esbuild": "pnpm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "pnpm run esbuild-base -- --sourcemap --watch",
     "test-compile": "tsc -p ./",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
