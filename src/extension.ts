@@ -81,11 +81,26 @@ export function activate(context: vscode.ExtensionContext) {
 
       const result = await vscode.window.showQuickPick(pickOptions);
 
-      if (result) {
-        await vscode.window.showTextDocument(
+      if (!result) {
+        return;
+      }
+
+      const openFilePicker = vscode.workspace.getConfiguration(
+        "monorepo-package-jumper.openFilePicker"
+      );
+
+      if (!openFilePicker) {
+        vscode.window.showTextDocument(
           vscode.Uri.file(`${result.absPath}/package.json`)
         );
+      } else {
+        vscode.commands.executeCommand(
+          "workbench.action.quickOpen",
+          `${result.detail} `
+        );
       }
+
+      // Update cache in background
     }
   );
 
