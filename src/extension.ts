@@ -36,15 +36,20 @@ const getWorkspaceRoot = async () => {
   return currentPackageDirectory?.directory ?? cwd;
 };
 
-const getPickOptions = (
+const getPickOptions = async (
   context: vscode.ExtensionContext,
-  workspaceRoot: string,
-  workspace: Workspace
-): PickOption[] => {
+  workspaceRoot: string
+): Promise<PickOption[]> => {
   const cachedOptions = context.workspaceState.get<PickOption[]>(workspaceRoot);
 
   if (cachedOptions) {
     return cachedOptions;
+  }
+
+  const workspace = await Workspace.getWorkspace({ cwd: workspaceRoot });
+
+  if (!workspace) {
+    throw new Error("Everything is ruined");
   }
 
   const freshOptions = workspace.getPackages().map((pkg) => ({
@@ -72,14 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       const workspaceRoot = await getWorkspaceRoot();
 
-      const workspace = await Workspace.getWorkspace({ cwd: workspaceRoot });
-      console.log("workspace: ", workspace);
-
-      if (!workspace) {
-        throw new Error("Everything is ruined");
-      }
-
-      const pickOptions = getPickOptions(context, workspaceRoot, workspace);
+      const pickOptions = await getPickOptions(context, workspaceRoot);
 
       const result = await vscode.window.showQuickPick(pickOptions);
 
