@@ -6,6 +6,14 @@ From the command palette, use "monorepo-package-jumper: Jump to package..." to s
 
 By default, "Jump to package" is bound to hyper J (cmd + ctrl + alt + shift + j).
 
+## Configuration
+
+## Open file picker
+
+By default, the extension will open the package.json of whichever package was selected.
+
+If this option is enabled, it will instead open the "Go to file..." palette (normally cmd P), prefilled with the path of the selected package to allow for filtered searching.
+
 ## Optimisations
 
 ### Selective loading
