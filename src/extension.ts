@@ -60,7 +60,7 @@ const getPickOptions = async (
   }
 
   const freshOptions = workspace.getPackages().map((pkg) => ({
-    label: pkg.name,
+    label: `📦 ${pkg.name}`,
     detail: path.relative(workspaceRoot, pkg.root),
     absPath: pkg.root,
   }));
